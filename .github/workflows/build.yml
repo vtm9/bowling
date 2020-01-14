@@ -1,0 +1,71 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      db:
+        image: postgres:12-alpine
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v1
+
+      - uses: actions/setup-elixir@v1.1.0
+        with:
+          otp-version: 22.x
+          elixir-version: 1.9.x
+
+      - uses: actions/cache@v1
+        with:
+          path: deps
+          key: ${{ runner.os }}-deps-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+          restore-keys: |
+            ${{ runner.os }}-deps-
+
+      - uses: actions/cache@v1
+        with:
+          path: _build
+          key: ${{ runner.os }}-build-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+          restore-keys: |
+            ${{ runner.os }}-build-
+
+      - uses: actions/cache@v1
+        with:
+          path: ~/.mix
+          key: ${{ runner.os }}-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+          restore-keys: |
+            ${{ runner.os }}-mix-
+
+      - name: Get deps
+        run: mix deps.get
+        env:
+          MIX_ENV: test
+
+      - name: Mix format
+        run: mix format --check-formatted
+        env:
+          MIX_ENV: test
+
+      - name: Mix credo
+        run: mix credo
+        env:
+          MIX_ENV: test
+
+      - name: test
+        run: mix coveralls.json
+
+      - name: Codecov
+        run: ./.codecov.bash
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
