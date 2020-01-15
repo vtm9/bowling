@@ -14,7 +14,7 @@ config :bowling,
 config :bowling, BowlingWeb.Endpoint,
   url: [host: "localhost"],
   secret_key_base: "wZNgEk4MlzPI9EtAq1m7XAV+K4dJeH5+y1JJE1D4EyPdI4SgGV4COeGX+yS8/pGc",
-  render_errors: [view: BowlingWeb.ErrorView, accepts: ~w(json)],
+  render_errors: [view: BowlingWeb.Api.ErrorView, accepts: ~w(json)],
   pubsub: [name: Bowling.PubSub, adapter: Phoenix.PubSub.PG2]
 
 # Configures Elixir's Logger

@@ -1,4 +1,4 @@
-defmodule BowlingWeb.ErrorView do
+defmodule BowlingWeb.Api.ErrorView do
   use BowlingWeb, :view
 
   # If you want to customize a particular status code
