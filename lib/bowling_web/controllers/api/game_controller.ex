@@ -10,14 +10,14 @@ defmodule BowlingWeb.Api.GameController do
       conn
       |> put_status(:created)
       |> put_resp_header("location", Routes.game_path(conn, :show, game))
-      |> render("show.json", game: game)
+      |> render("create.json", game: game)
     end
   end
 
   def show(conn, %{"id" => id}) do
-    game = Bowling.get_full_game!(id)
+    {game, result} = Bowling.get_game_result(id)
 
     conn
-    |> render("show.json", game: game)
+    |> render("show.json", game: game, result: result)
   end
 end

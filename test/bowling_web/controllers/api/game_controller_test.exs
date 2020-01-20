@@ -9,8 +9,11 @@ defmodule BowlingWeb.Api.GameControllerTest do
 
       response = json_response(conn, 201)
 
-      assert Map.take(response, ["players"]) == %{
-               "players" => [%{"name" => "p1"}, %{"name" => "p2"}]
+      assert Map.take(response, ["result"]) == %{
+               "result" => [
+                 %{"frames" => [], "player_name" => "p1", "total" => 0},
+                 %{"frames" => [], "player_name" => "p2", "total" => 0}
+               ]
              }
 
       assert get_req_header(conn, "location")
@@ -33,13 +36,57 @@ defmodule BowlingWeb.Api.GameControllerTest do
 
   describe "GET" do
     test "shows game", %{conn: conn} do
-      game = insert(:game)
+      game = insert(:game, %{players: [%{name: "p1"}, %{name: "p2"}]})
+      [player1, player2] = game.players
+
+      insert(:frame, %{game: game, player: player1, throws: [%{score: 10}]})
+      insert(:frame, %{game: game, player: player1, throws: [%{score: 7}, %{score: 3}]})
+      insert(:frame, %{game: game, player: player1, throws: [%{score: 9}, %{score: 0}]})
+
+      insert(:frame, %{game: game, player: player2, throws: [%{score: 3}, %{score: 4}]})
+      insert(:frame, %{game: game, player: player2, throws: [%{score: 10}]})
 
       conn =
         conn
         |> get(Routes.game_path(conn, :show, game.id))
 
-      assert json_response(conn, 200)
+      assert json_response(conn, 200) == %{
+               "id" => game.id,
+               "result" => [
+                 %{
+                   "frames" => [
+                     %{"result" => 20, "throws" => [%{"score" => 10}]},
+                     %{
+                       "result" => 19,
+                       "throws" => [%{"score" => 7}, %{"score" => 3}]
+                     },
+                     %{
+                       "result" => 9,
+                       "throws" => [%{"score" => 9}, %{"score" => 0}]
+                     }
+                   ],
+                   "player_name" => "p1",
+                   "total" => 48
+                 },
+                 %{
+                   "frames" => [
+                     %{
+                       "result" => 7,
+                       "throws" => [%{"score" => 3}, %{"score" => 4}]
+                     },
+                     %{"result" => 10, "throws" => [%{"score" => 10}]}
+                   ],
+                   "player_name" => "p2",
+                   "total" => 17
+                 }
+               ]
+             }
+    end
+
+    test "renders not found", %{conn: conn} do
+      assert_raise Ecto.NoResultsError, fn ->
+        get(conn, Routes.game_path(conn, :show, -1))
+      end
     end
   end
 end

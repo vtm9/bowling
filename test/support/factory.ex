@@ -10,4 +10,8 @@ defmodule Bowling.Factory do
   def player_factory do
     %Bowling.Player{name: sequence(:player_name, &"name-#{&1}")}
   end
+
+  def frame_factory do
+    %Bowling.Frame{}
+  end
 end

@@ -3,12 +3,6 @@ defmodule Bowling do
   alias Bowling.Repo
   alias Bowling.Scope
 
-  def list_games do
-    Repo.all(Game)
-  end
-
-  def get_game!(id), do: Repo.get!(Game, id)
-
   def get_full_game!(id) do
     Game
     |> Scope.full_game()
@@ -47,6 +41,12 @@ defmodule Bowling do
     end
   end
 
+  def get_game_result(id) do
+    id
+    |> get_full_game!()
+    |> calc_game_result()
+  end
+
   defp get_active_frame(game) do
     current_frame =
       game
@@ -83,12 +83,82 @@ defmodule Bowling do
   defp need_to_finish_frame(throws) do
     cond do
       Enum.count(throws) >= 2 -> true
-      get_frame_score(throws) >= 10 -> true
+      get_total_throws_score(throws) >= 10 -> true
       true -> false
     end
   end
 
-  defp get_frame_score(throws) do
-    Enum.reduce(throws, 0, fn throw, acc -> acc + throw.score end)
+  defp calc_game_result(game) do
+    result =
+      game
+      |> Map.get(:players, [])
+      |> Enum.map(fn player ->
+        {total, frames} =
+          game
+          |> Map.get(:frames, [])
+          |> Enum.filter(fn frame -> frame.player_id == player.id end)
+          |> calc_frames_result
+
+        %{player_name: player.name, total: total, frames: frames}
+      end)
+
+    {game, result}
+  end
+
+  defp calc_frames_result(frames) do
+    game_throws = frames |> Enum.map(& &1.throws) |> List.flatten()
+
+    frames
+    |> Enum.with_index()
+    |> Enum.reduce({0, []}, fn {frame, frame_index}, {total, acc_frames} ->
+      frame_result = get_frame_result(frame, frame_index, game_throws)
+      new_total = total + frame_result
+
+      new_frames =
+        Enum.concat(acc_frames, [
+          %{
+            result: frame_result,
+            throws: Enum.map(frame.throws, &Map.take(&1, [:score]))
+          }
+        ])
+
+      {new_total, new_frames}
+    end)
+  end
+
+  defp get_frame_result(frame, _frame_index, game_throws) do
+    case get_frame_type(frame) do
+      :strike -> get_strike_result(frame, game_throws)
+      :spare -> get_spare_result(frame, game_throws)
+      :common -> get_total_throws_score(frame)
+    end
+  end
+
+  defp get_frame_type(frame) do
+    case frame.throws do
+      [%{score: 10} | _] -> :strike
+      [%{score: x}, %{score: y}] when x + y == 10 -> :spare
+      _ -> :common
+    end
+  end
+
+  defp get_strike_result(frame, game_throws) do
+    [first_throw | _] = frame.throws
+    throw_index = game_throws |> Enum.find_index(fn throw -> throw.id == first_throw.id end)
+    game_throws |> Enum.slice(throw_index..(throw_index + 2)) |> get_total_throws_score
+  end
+
+  defp get_spare_result(frame, game_throws) do
+    [_ | [second_throw | _]] = frame.throws
+    throw_index = game_throws |> Enum.find_index(fn throw -> throw.id == second_throw.id end)
+    game_throws |> Enum.at(throw_index + 1) |> Map.get(:score, 0) |> Kernel.+(10)
+  end
+
+  defp get_total_throws_score(%Bowling.Frame{} = frame) do
+    frame |> Map.get(:throws, []) |> get_total_throws_score
+  end
+
+  defp get_total_throws_score(throws) do
+    throws |> Enum.map(&Map.get(&1, :score, 0)) |> Enum.sum()
   end
 end

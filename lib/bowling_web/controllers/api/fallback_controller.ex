@@ -12,11 +12,4 @@ defmodule BowlingWeb.Api.FallbackController do
     |> put_view(BowlingWeb.Api.ChangesetView)
     |> render("error.json", changeset: changeset)
   end
-
-  def call(conn, {:error, :not_found}) do
-    conn
-    |> put_status(:not_found)
-    |> put_view(BowlingWeb.Api.ErrorView)
-    |> render(:"404")
-  end
 end
