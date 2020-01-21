@@ -2,13 +2,13 @@ defmodule Bowling.Game do
   use Ecto.Schema
   import Ecto.Changeset
 
-  @states ~w(active finished)
+  @states ~w(open finished)
 
   schema "games" do
     has_many(:players, Bowling.Player)
     has_many(:frames, Bowling.Frame)
 
-    field :state, :string, default: "active"
+    field :state, :string, default: "open"
     timestamps()
   end
 
