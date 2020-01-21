@@ -7,11 +7,11 @@ defmodule Bowling.Scope do
     from game in query,
       left_join: players in assoc(game, :players),
       left_join: frames in assoc(game, :frames),
-      left_join: throws in assoc(frames, :throws),
-      order_by: [asc: throws.id],
+      left_join: balls in assoc(frames, :balls),
+      order_by: [asc: balls.id],
       preload: [
         players: players,
-        frames: {frames, throws: throws}
+        frames: {frames, balls: balls}
       ]
   end
 end

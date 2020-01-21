@@ -21,7 +21,7 @@ frames =
 
 Bowling.Repo.insert_all(Bowling.Frame, frames)
 
-throws =
+balls =
   Bowling.Frame
   |> Bowling.Repo.all()
   |> Enum.map(fn frame ->
@@ -36,4 +36,4 @@ throws =
   end)
   |> List.flatten()
 
-Bowling.Repo.insert_all(Bowling.Throw, throws)
+Bowling.Repo.insert_all(Bowling.Ball, balls)

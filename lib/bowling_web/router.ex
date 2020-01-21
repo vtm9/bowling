@@ -10,7 +10,7 @@ defmodule BowlingWeb.Router do
     pipe_through :api
 
     resources "/games", GameController, only: [:create, :show] do
-      resources "/throws", ThrowController, only: [:create]
+      resources "/balls", BallController, only: [:create]
     end
   end
 

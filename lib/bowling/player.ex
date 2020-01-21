@@ -10,8 +10,8 @@ defmodule Bowling.Player do
   end
 
   @doc false
-  def changeset(throw, attrs) do
-    throw
+  def changeset(ball, attrs) do
+    ball
     |> cast(attrs, [:name])
     |> validate_required([])
   end

@@ -1,8 +1,8 @@
-defmodule Bowling.Throw do
+defmodule Bowling.Ball do
   use Ecto.Schema
   import Ecto.Changeset
 
-  schema "throws" do
+  schema "balls" do
     belongs_to(:frame, Bowling.Frame)
 
     field(:score, :integer)
@@ -10,17 +10,17 @@ defmodule Bowling.Throw do
   end
 
   @doc false
-  def changeset(throw, attrs) do
-    throw
+  def changeset(ball, attrs) do
+    ball
     |> cast(attrs, [:score])
     |> cast_assoc(:frame)
     |> validate_required([:score])
     |> validate_number(:score, greater_than_or_equal_to: 0, less_than_or_equal_to: 10)
   end
 
-  def build(throw_params) do
+  def build(ball_params) do
     %__MODULE__{}
-    |> changeset(throw_params)
+    |> changeset(ball_params)
     |> apply_action(:insert)
   end
 end

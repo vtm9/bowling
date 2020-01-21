@@ -7,7 +7,7 @@ defmodule Bowling.Frame do
   schema "frames" do
     belongs_to(:game, Bowling.Game)
     belongs_to(:player, Bowling.Player)
-    has_many(:throws, Bowling.Throw)
+    has_many(:balls, Bowling.Ball)
 
     field :state, :string, default: "active"
     timestamps()
@@ -17,7 +17,7 @@ defmodule Bowling.Frame do
   def changeset(game, attrs \\ %{}) do
     game
     |> cast(attrs, [:player_id, :game_id, :state])
-    |> put_assoc(:throws, attrs.throws)
+    |> put_assoc(:balls, attrs.balls)
     |> validate_inclusion(:state, @states)
   end
 end

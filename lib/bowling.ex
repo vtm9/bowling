@@ -15,21 +15,21 @@ defmodule Bowling do
     |> Repo.insert()
   end
 
-  def create_throw(game_id, throw_params) do
+  def create_ball(game_id, ball_params) do
     game = get_full_game!(game_id)
 
     case game.state do
       "active" ->
         active_frame = get_active_frame(game)
 
-        case Bowling.Throw.build(throw_params) do
-          {:ok, throw} ->
-            Bowling.Throw.build(throw_params)
-            throws = [throw | active_frame.throws]
+        case Bowling.Ball.build(ball_params) do
+          {:ok, ball} ->
+            Bowling.Ball.build(ball_params)
+            balls = [ball | active_frame.balls]
 
             active_frame
-            |> Bowling.Frame.changeset(%{throws: throws})
-            |> maybe_finish_frame(throws)
+            |> Bowling.Frame.changeset(%{balls: balls})
+            |> maybe_finish_frame(balls)
             |> Repo.insert_or_update()
 
           {:error, changeset} ->
@@ -63,7 +63,7 @@ defmodule Bowling do
     Ecto.build_assoc(game, :frames, %{
       player_id: get_active_player(game).id,
       game_id: game.id,
-      throws: []
+      balls: []
     })
   end
 
@@ -72,18 +72,18 @@ defmodule Bowling do
     Enum.at(game.players, active_player_index)
   end
 
-  defp maybe_finish_frame(changeset, throws) do
-    if need_to_finish_frame(throws) do
+  defp maybe_finish_frame(changeset, balls) do
+    if need_to_finish_frame(balls) do
       Ecto.Changeset.change(changeset, %{state: "finished"})
     else
       changeset
     end
   end
 
-  defp need_to_finish_frame(throws) do
+  defp need_to_finish_frame(balls) do
     cond do
-      Enum.count(throws) >= 2 -> true
-      get_total_throws_score(throws) >= 10 -> true
+      Enum.count(balls) >= 2 -> true
+      get_total_balls_score(balls) >= 10 -> true
       true -> false
     end
   end
@@ -106,19 +106,19 @@ defmodule Bowling do
   end
 
   defp calc_frames_result(frames) do
-    game_throws = frames |> Enum.map(& &1.throws) |> List.flatten()
+    game_balls = frames |> Enum.map(& &1.balls) |> List.flatten()
 
     frames
     |> Enum.with_index()
     |> Enum.reduce({0, []}, fn {frame, frame_index}, {total, acc_frames} ->
-      frame_result = get_frame_result(frame, frame_index, game_throws)
+      frame_result = get_frame_result(frame, frame_index, game_balls)
       new_total = total + frame_result
 
       new_frames =
         Enum.concat(acc_frames, [
           %{
             result: frame_result,
-            throws: Enum.map(frame.throws, &Map.take(&1, [:score]))
+            balls: Enum.map(frame.balls, &Map.take(&1, [:score]))
           }
         ])
 
@@ -126,39 +126,39 @@ defmodule Bowling do
     end)
   end
 
-  defp get_frame_result(frame, _frame_index, game_throws) do
+  defp get_frame_result(frame, _frame_index, game_balls) do
     case get_frame_type(frame) do
-      :strike -> get_strike_result(frame, game_throws)
-      :spare -> get_spare_result(frame, game_throws)
-      :common -> get_total_throws_score(frame)
+      :strike -> get_strike_result(frame, game_balls)
+      :spare -> get_spare_result(frame, game_balls)
+      :common -> get_total_balls_score(frame)
     end
   end
 
   defp get_frame_type(frame) do
-    case frame.throws do
+    case frame.balls do
       [%{score: 10} | _] -> :strike
       [%{score: x}, %{score: y}] when x + y == 10 -> :spare
       _ -> :common
     end
   end
 
-  defp get_strike_result(frame, game_throws) do
-    [first_throw | _] = frame.throws
-    throw_index = game_throws |> Enum.find_index(fn throw -> throw.id == first_throw.id end)
-    game_throws |> Enum.slice(throw_index..(throw_index + 2)) |> get_total_throws_score
+  defp get_strike_result(frame, game_balls) do
+    [first_ball | _] = frame.balls
+    ball_index = game_balls |> Enum.find_index(fn ball -> ball.id == first_ball.id end)
+    game_balls |> Enum.slice(ball_index..(ball_index + 2)) |> get_total_balls_score
   end
 
-  defp get_spare_result(frame, game_throws) do
-    [_ | [second_throw | _]] = frame.throws
-    throw_index = game_throws |> Enum.find_index(fn throw -> throw.id == second_throw.id end)
-    game_throws |> Enum.at(throw_index + 1) |> Map.get(:score, 0) |> Kernel.+(10)
+  defp get_spare_result(frame, game_balls) do
+    [_ | [second_ball | _]] = frame.balls
+    ball_index = game_balls |> Enum.find_index(fn ball -> ball.id == second_ball.id end)
+    game_balls |> Enum.at(ball_index + 1) |> Map.get(:score, 0) |> Kernel.+(10)
   end
 
-  defp get_total_throws_score(%Bowling.Frame{} = frame) do
-    frame |> Map.get(:throws, []) |> get_total_throws_score
+  defp get_total_balls_score(%Bowling.Frame{} = frame) do
+    frame |> Map.get(:balls, []) |> get_total_balls_score
   end
 
-  defp get_total_throws_score(throws) do
-    throws |> Enum.map(&Map.get(&1, :score, 0)) |> Enum.sum()
+  defp get_total_balls_score(balls) do
+    balls |> Enum.map(&Map.get(&1, :score, 0)) |> Enum.sum()
   end
 end

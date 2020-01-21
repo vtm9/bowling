@@ -39,12 +39,12 @@ defmodule BowlingWeb.Api.GameControllerTest do
       game = insert(:game, %{players: [%{name: "p1"}, %{name: "p2"}]})
       [player1, player2] = game.players
 
-      insert(:frame, %{game: game, player: player1, throws: [%{score: 10}]})
-      insert(:frame, %{game: game, player: player1, throws: [%{score: 7}, %{score: 3}]})
-      insert(:frame, %{game: game, player: player1, throws: [%{score: 9}, %{score: 0}]})
+      insert(:frame, %{game: game, player: player1, balls: [%{score: 10}]})
+      insert(:frame, %{game: game, player: player1, balls: [%{score: 7}, %{score: 3}]})
+      insert(:frame, %{game: game, player: player1, balls: [%{score: 9}, %{score: 0}]})
 
-      insert(:frame, %{game: game, player: player2, throws: [%{score: 3}, %{score: 4}]})
-      insert(:frame, %{game: game, player: player2, throws: [%{score: 10}]})
+      insert(:frame, %{game: game, player: player2, balls: [%{score: 3}, %{score: 4}]})
+      insert(:frame, %{game: game, player: player2, balls: [%{score: 10}]})
 
       conn =
         conn
@@ -55,14 +55,14 @@ defmodule BowlingWeb.Api.GameControllerTest do
                "result" => [
                  %{
                    "frames" => [
-                     %{"result" => 20, "throws" => [%{"score" => 10}]},
+                     %{"result" => 20, "balls" => [%{"score" => 10}]},
                      %{
                        "result" => 19,
-                       "throws" => [%{"score" => 7}, %{"score" => 3}]
+                       "balls" => [%{"score" => 7}, %{"score" => 3}]
                      },
                      %{
                        "result" => 9,
-                       "throws" => [%{"score" => 9}, %{"score" => 0}]
+                       "balls" => [%{"score" => 9}, %{"score" => 0}]
                      }
                    ],
                    "player_name" => "p1",
@@ -72,9 +72,9 @@ defmodule BowlingWeb.Api.GameControllerTest do
                    "frames" => [
                      %{
                        "result" => 7,
-                       "throws" => [%{"score" => 3}, %{"score" => 4}]
+                       "balls" => [%{"score" => 3}, %{"score" => 4}]
                      },
-                     %{"result" => 10, "throws" => [%{"score" => 10}]}
+                     %{"result" => 10, "balls" => [%{"score" => 10}]}
                    ],
                    "player_name" => "p2",
                    "total" => 17
