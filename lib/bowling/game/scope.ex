@@ -8,7 +8,7 @@ defmodule Bowling.Scope do
       left_join: players in assoc(game, :players),
       left_join: frames in assoc(game, :frames),
       left_join: balls in assoc(frames, :balls),
-      order_by: [asc: balls.id],
+      order_by: [asc: players.id, asc: balls.id],
       preload: [
         players: players,
         frames: {frames, balls: balls}

@@ -4,6 +4,8 @@ defmodule Bowling do
   alias Bowling.Repo
   alias Bowling.Scope
 
+  @max_frames_count 10
+
   def get_full_game!(id) do
     Game
     |> Scope.full_game()
@@ -19,18 +21,17 @@ defmodule Bowling do
   def create_ball(game_id, ball_params) do
     game = get_full_game!(game_id)
 
-    case game.state do
-      "open" ->
-        open_frame = get_open_frame(game)
+    case get_game_state(game) do
+      "active" ->
+        current_frame = get_current_frame(game)
 
         case Bowling.Ball.build(ball_params) do
           {:ok, ball} ->
-            Bowling.Ball.build(ball_params)
-            balls = [ball | open_frame.balls]
+            balls = Enum.concat(current_frame.balls, [ball])
 
-            open_frame
+            current_frame
             |> Bowling.Frame.changeset(%{balls: balls})
-            |> maybe_finish_frame(balls)
+            |> maybe_finish_frame(game, balls)
             |> Repo.insert_or_update()
 
           {:error, changeset} ->
@@ -52,13 +53,21 @@ defmodule Bowling do
     |> get_game_result()
   end
 
-  defp get_open_frame(game) do
-    open_frame =
+  def get_frame_type(balls) do
+    case balls do
+      [%{score: 10} | _] -> :strike
+      [%{score: x}, %{score: y} | _] when x + y == 10 -> :spare
+      _ -> :open
+    end
+  end
+
+  defp get_current_frame(game) do
+    current_frame =
       game
       |> Map.get(:frames, [])
-      |> Enum.find(fn frame -> Bowling.Frame.is_open?(frame) end)
+      |> Enum.find(fn frame -> frame_active?(frame) end)
 
-    case open_frame do
+    case current_frame do
       nil -> build_new_frame(game)
       frame -> frame
     end
@@ -77,19 +86,62 @@ defmodule Bowling do
     Enum.at(game.players, active_player_index)
   end
 
-  defp maybe_finish_frame(changeset, balls) do
-    if need_to_finish_frame(balls) do
-      Ecto.Changeset.change(changeset, %{state: "finished"})
+  defp maybe_finish_frame(frame_changeset, game, balls) do
+    if need_to_finish_frame(frame_changeset, game, balls) do
+      Ecto.Changeset.change(frame_changeset, %{state: "finished"})
     else
-      changeset
+      frame_changeset
     end
   end
 
-  defp need_to_finish_frame(balls) do
-    cond do
-      Enum.count(balls) >= 2 -> true
-      GameResult.get_total_balls_score(balls) >= 10 -> true
-      true -> false
+  defp need_to_finish_frame(frame_changeset, game, balls) do
+    frames_count = get_frames_count(game, frame_changeset)
+    frame_type = get_frame_type(balls)
+    balls_count = Enum.count(balls)
+
+    case {frames_count, frame_type} do
+      {@max_frames_count, :strike} ->
+        balls_count == 3
+
+      {@max_frames_count, :spare} ->
+        balls_count == 3
+
+      {_, :strike} ->
+        true
+
+      {_, :spare} ->
+        true
+
+      _ ->
+        balls_count == 2
+    end
+  end
+
+  defp get_frames_count(game, frame_changeset) do
+    current_frame_num = if Ecto.get_meta(frame_changeset.data, :state) == :built, do: 1, else: 0
+
+    prev_frame_count =
+      game
+      |> Map.get(:frames, [])
+      |> Enum.filter(fn frame -> frame.player_id == frame_changeset.data.player_id end)
+      |> Enum.count()
+
+    prev_frame_count + current_frame_num
+  end
+
+  def frame_active?(frame), do: frame.state == "active"
+
+  def get_game_state(game) do
+    finished_frames_count =
+      game
+      |> Map.get(:frames, [])
+      |> Enum.filter(fn frame -> !frame_active?(frame) end)
+      |> Enum.count()
+
+    if finished_frames_count < Enum.count(game.players) * @max_frames_count do
+      "active"
+    else
+      "finished"
     end
   end
 end

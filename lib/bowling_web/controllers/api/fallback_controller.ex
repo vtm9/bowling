@@ -12,4 +12,11 @@ defmodule BowlingWeb.Api.FallbackController do
     |> put_view(BowlingWeb.Api.ChangesetView)
     |> render("error.json", changeset: changeset)
   end
+
+  def call(conn, {:error, reason}) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> put_view(BowlingWeb.Api.ChangesetView)
+    |> json(%{reason: reason})
+  end
 end

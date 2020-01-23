@@ -22,7 +22,7 @@ defmodule BowlingWeb.Api.GameControllerTest do
       assert Bowling.Repo.count(Bowling.Player) == 2
     end
 
-    test "validates", %{conn: conn} do
+    test "validates players", %{conn: conn} do
       conn =
         conn
         |> post("/api/v1/games", %{game: %{}})
