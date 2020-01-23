@@ -2,6 +2,8 @@ defmodule BowlingWeb.Router do
   use BowlingWeb, :router
   use Plug.ErrorHandler
 
+  require Logger
+
   pipeline :api do
     plug :accepts, ["json"]
   end
@@ -26,5 +28,10 @@ defmodule BowlingWeb.Router do
     |> put_status(:not_found)
     |> json(%{error: "NOT_FOUND"})
     |> halt
+  end
+
+  def handle_errors(conn, %{kind: _kind, reason: _reason, stack: stack}) do
+    Logger.error(Exception.format_stacktrace(stack))
+    send_resp(conn, conn.status, "SOMETHING_WENT_WRONG")
   end
 end
