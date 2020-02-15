@@ -16,6 +16,3 @@ format:
 
 pg:
 	docker-compose up -d db
-
-psql:
-	docker-compose run --rm db psql -h db -U postgres -d hr_dev
